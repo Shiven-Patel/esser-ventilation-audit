@@ -7,3 +7,10 @@ __pycache__/
 .DS_Store
 .Rhistory
 .RData
+
+# Written drafts and typeset documents live outside the repository.
+docs/manuscript.md
+docs/manuscript_for_docs.html
+docs/computation_record_for_docs.html
+docs/*.docx
+docs/*.pdf

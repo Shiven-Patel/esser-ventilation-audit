@@ -1,9 +1,10 @@
 # ESSER ventilation funding and industrial air emissions
 
 Did the $189.5 billion in federal pandemic relief for schools reach the schools nearest
-to industrial air emissions? This repository contains the full analysis behind that
-question: the exposure model, the federal-record linkage, every table and figure in the
-manuscript, and the audit that found what was wrong with the previous version of this work.
+to industrial air emissions? This repository holds the machinery behind that question and
+nothing else: the exposure model, the federal-record linkage, every table and figure, the
+worked computation record, and the audit that found what was wrong with the previous
+version of this work. The paper written from it is not distributed here.
 
 **Headline result.** Recorded ESSER ventilation funding rises with modelled industrial air
 exposure across almost the entire distribution, from 54.2% of schools below the median to
@@ -39,21 +40,27 @@ state fixed-effects logit. Everything is deterministic; there is no sampling and
 | 3 | `src/03_analysis.py` | Every table and model in the paper | `output/*.csv`, `output/analysis_log.md` |
 | 4 | `src/04_figures.py` | Charts, read only from step 3's CSVs | `output/figures/fig1-5*.png` |
 | 5 | `src/07_maps.py` | Maps, drawn from the analysis dataset with no basemap | `output/figures/fig6-8*.png` |
-| 6 | `src/05_math_doc.py`, `src/06_manuscript_docx.js` | Computation record and the Word manuscript | `output/math_workbook.html`, `docs/*.docx` |
+| 6 | `src/05_math_doc.py` | The computation record: every formula, cutpoint and intermediate quantity | `output/math_workbook.html` |
+
+`output/math_workbook.html` is where the arithmetic lives. It carries the exposure formula
+with its constants, the linkage rules, the model specifications and their outputs, and the
+intermediate quantities behind each reported figure, so a reader can follow a number from
+the raw file to the table without running anything.
 
 `src/08_build_viewer.py` builds the interactive map separately; it is not part of the
-manuscript chain and needs a network connection to load Leaflet and a basemap. It is
+analysis chain and needs a network connection to load Leaflet and a basemap. It is
 published at
 [shiven-patel.github.io/esser-ventilation-audit/viewer/](https://shiven-patel.github.io/esser-ventilation-audit/viewer/).
-`src/09_docs_html.py` re-emits the manuscript and the computation record as Google
-Docs-ready HTML, and `src/10_viewer_figures.py` crops the viewer screenshots that become
-Figures 9 and 10. Neither changes a number.
+Three scripts here typeset rather than compute. `src/06_manuscript_docx.js` and
+`src/09_docs_html.py` lay a written draft out as Word and as HTML, and
+`src/10_viewer_figures.py` crops the viewer screenshots. They read a manuscript file that
+is kept outside this repository and is ignored by `.gitignore`, so they will not run from a
+fresh clone. None of them changes a number.
 
 Step 4 reads only the CSVs step 3 wrote, so a figure cannot disagree with the number it
-plots. `output/analysis_log.md` is the complete computed record: if a figure in the paper
-is not traceable to a line in that file, it does not belong in the paper. No figure carries
-a title of its own; captions live in the manuscript and are inserted next to the image when
-the Word file is built.
+plots. `output/analysis_log.md` is the complete computed record: a figure not traceable to
+a line in that file does not belong in the analysis. No figure carries a title of its own,
+because titles are set alongside the image wherever it is placed.
 
 ## Data
 
@@ -107,18 +114,22 @@ checkable rather than asserted.
 
 ```
 src/          numbered pipeline, run in order
-docs/         manuscript, METHODS (every formula and decision), data dictionary
+docs/         METHODS: every formula, cutpoint and decision, with the legacy audit
 data/raw/     the four public inputs (not tracked)
 data/derived/ intermediate and analysis files (not tracked)
-output/       tables, analysis_log.md, figures
+output/       tables, analysis_log.md, math_workbook.html, figures
 ```
+
+Written drafts are not tracked. `.gitignore` excludes them so that a stale copy of a paper
+cannot end up sitting next to code that has moved on from it.
 
 ## Citing
 
-If you use the exposure index or the identifier-coverage table, please cite the
-manuscript in `docs/manuscript.md`. If you use the identifier finding, please note that
-it applies to the FY2023 APR specifically; the Department may publish a crosswalk, which
-would be the single most useful thing it could do for school-level ESSER research.
+If you use the exposure index or the identifier-coverage table, cite the paper this
+analysis supports once it is published; until then, cite this repository and the commit you
+used. If you use the identifier finding, please note that it applies to the
+FY2023 APR specifically; the Department may publish a crosswalk, which would be the single
+most useful thing it could do for school-level ESSER research.
 
 ## License
 

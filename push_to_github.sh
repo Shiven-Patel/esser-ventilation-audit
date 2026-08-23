@@ -46,7 +46,7 @@ if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
       --"${VISIBILITY}" \
       --source=. \
       --remote=origin \
-      --description "Did federal pandemic relief for school ventilation reach the schools nearest to industrial air emissions?" \
+      --description "Exposure model, federal-record linkage and computation record behind an analysis of ESSER ventilation funding and industrial air emissions at US public schools." \
       --push
   fi
 else
@@ -71,6 +71,5 @@ EOF
 fi
 
 echo
-echo "Done. Now put the URL into the manuscript:"
-echo "  docs/manuscript.md, 'Data and code availability', replace [REPOSITORY URL]"
-echo "  then rebuild:  node src/06_manuscript_docx.js"
+echo "Done. Written drafts are excluded by .gitignore and stay out of the repository;"
+echo "if you keep a manuscript in docs/, check that it was not pushed."
