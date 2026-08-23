@@ -48,6 +48,8 @@ const FIG_FILES = {
   6: 'fig6_funding_map.png',
   7: 'fig7_top_exposure_map.png',
   8: 'fig8_case_maps.png',
+  9: 'fig9_viewer_national.png',
+  10: 'fig10_viewer_oklahoma.png',
 };
 
 function pngSize(file) {
