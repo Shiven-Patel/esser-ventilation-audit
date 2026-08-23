@@ -1,0 +1,6 @@
+model,n,C_statistic,pseudo_R2,exposure_per_10pts,exposure_per_10pts_p,income_per_10k,income_per_10k_p,pct_poc_per_10pp,pct_poc_per_10pp_p
+A. exposure only,80308,0.55,0.0016,1.077 (1.065-1.090),3.14e-37,,,,
+B. + county income + % POC,80308,0.652,0.056,1.044 (1.032-1.056),3.09e-13,0.913 (0.907-0.919),2.34e-162,1.302 (1.293-1.312),0.00e+00
+C. + state fixed effects,75961,0.733,0.1238,1.043 (1.030-1.056),6.46e-11,0.862 (0.855-0.870),7.53e-233,1.261 (1.248-1.275),0.00e+00
+S. state fixed effects only,75961,0.701,0.0956,,,,,,
+"B'. covariates only, Model C's sample",75961,0.657,0.0541,1.050 (1.038-1.063),1.32e-15,0.879 (0.873-0.885),2.52e-287,1.300 (1.290-1.310),0.00e+00

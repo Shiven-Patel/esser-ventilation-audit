@@ -1,0 +1,21 @@
+variant,quintile,description,n,funded_pct
+E_air,Q1,air-mass weighted inverse square (canonical),16062,53.1
+E_air,Q2,air-mass weighted inverse square (canonical),16061,53.5
+E_air,Q3,air-mass weighted inverse square (canonical),16062,58.4
+E_air,Q4,air-mass weighted inverse square (canonical),16061,59.0
+E_air,Q5,air-mass weighted inverse square (canonical),16062,64.7
+E_isq,Q1,unweighted inverse square,16062,48.6
+E_isq,Q2,unweighted inverse square,16061,59.0
+E_isq,Q3,unweighted inverse square,16062,57.4
+E_isq,Q4,unweighted inverse square,16061,59.1
+E_isq,Q5,unweighted inverse square,16062,64.7
+E_fac,Q1,"facility dedup only, legacy epsilon and k=50",16062,48.3
+E_fac,Q2,"facility dedup only, legacy epsilon and k=50",16061,57.0
+E_fac,Q3,"facility dedup only, legacy epsilon and k=50",16062,59.3
+E_fac,Q4,"facility dedup only, legacy epsilon and k=50",16061,57.6
+E_fac,Q5,"facility dedup only, legacy epsilon and k=50",16062,66.6
+E_forms,Q1,"published index (chemical-form cloud, legacy epsilon, k=50)",16062,49.4
+E_forms,Q2,"published index (chemical-form cloud, legacy epsilon, k=50)",16061,57.2
+E_forms,Q3,"published index (chemical-form cloud, legacy epsilon, k=50)",16062,56.1
+E_forms,Q4,"published index (chemical-form cloud, legacy epsilon, k=50)",16061,58.7
+E_forms,Q5,"published index (chemical-form cloud, legacy epsilon, k=50)",16062,67.3

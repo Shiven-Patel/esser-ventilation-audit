@@ -1,0 +1,6 @@
+case,state,county,schools,matched_to_ESSER,pct_matched,funded_pct_matched_only,funded_pct_blank_as_zero,mean_exposure,pct_poc,county_income
+South Bronx,NY,Bronx County,471,58,12.3,44.8,5.5,2.62,91.3,48676
+Albuquerque,NM,Bernalillo County,208,191,91.8,2.1,1.9,1.26,62.9,69473
+Gary / NW Indiana,IN,Lake County,121,99,81.8,38.4,31.4,41.52,48.6,71493
+Houston,TX,Harris County,1201,0,0.0,,0.0,20.11,73.4,74983
+Oklahoma City,OK,Oklahoma County,220,216,98.2,0.0,0.0,2.66,47.9,66679
