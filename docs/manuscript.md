@@ -142,6 +142,10 @@ Two additions would resolve much of what is unsettled here. School-level demogra
 
 **Figure 8.** Bernalillo, Oklahoma and Bronx counties, coloured as in Figure 6. Each panel is a square window centred on its own county and carries its own scale bar, so areas should not be compared across panels.
 
+**Figure 9.** The companion viewer, national view, with schools coloured by their district's recorded funding status. Grey points carry no linkable district record. The panel at the right reports the current selection and recomputes as state, county and a minimum exposure percentile are set.
+
+**Figure 10.** The viewer with Oklahoma County selected. Every linked school in the county is orange, meaning its district answered the ventilation question and answered no; the four grey points are schools whose district record could not be linked.
+
 ---
 
 ## Notes
@@ -220,7 +224,9 @@ Two additions would resolve much of what is unsettled here. School-level demogra
 
 ## Data and code availability
 
-All analysis is reproducible from public files. Scripts, the derived analysis dataset, every output table and the figures are at [REPOSITORY URL]. The pipeline runs in ordered steps and regenerates every number in this manuscript from the raw NCES, EPA, ED and Census files.
+All analysis is reproducible from public files. Scripts, the derived analysis dataset, every output table and the figures are at https://github.com/Shiven-Patel/esser-ventilation-audit. The pipeline runs in ordered steps and regenerates every number in this manuscript from the raw NCES, EPA, ED and Census files.
+
+A browser map of the school-level file is published alongside the code at https://shiven-patel.github.io/esser-ventilation-audit/viewer/, and Figure 9 shows its national view. The read-out returns 102,069 schools, 80,313 of them carrying a district ventilation answer and 46,378 recorded as funded, the 57.7% reported above; the analytic sample is five schools smaller, dropping two Arizona schools whose districts filed a usable identifier in a state where no other district did, and three schools in De Baca County, New Mexico, for which the ACS publishes no median household income estimate. Selecting a county narrows the read-out. Figure 10 does that for Oklahoma County, where 220 schools appear, 216 link to a district record, and none is recorded as funded. A reader who doubts a claim made here about a particular place can check it against the points themselves.
 
 ## Declaration of AI use
 
