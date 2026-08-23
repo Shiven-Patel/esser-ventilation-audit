@@ -1,9 +1,9 @@
 # METHODS
 
 Every decision, formula and threshold, with the line of code that implements it and the
-reason it was chosen. This file is the audit trail for the manuscript: any number in the
-paper should be locatable here, then in `output/analysis_log.md`, then in the script that
-produced it.
+reason it was chosen. This file is the audit trail: any reported number should be locatable
+here, then in `output/analysis_log.md`, then in the script that produced it. The written
+paper is kept outside this repository, so what follows stands on its own.
 
 Notation: *s* indexes schools, *f* indexes TRI facilities, *l* indexes local education
 agencies (school districts).
