@@ -42,7 +42,12 @@ state fixed-effects logit. Everything is deterministic; there is no sampling and
 | 6 | `src/05_math_doc.py`, `src/06_manuscript_docx.js` | Computation record and the Word manuscript | `output/math_workbook.html`, `docs/*.docx` |
 
 `src/08_build_viewer.py` builds the interactive map separately; it is not part of the
-manuscript chain and needs a network connection to load Leaflet and a basemap.
+manuscript chain and needs a network connection to load Leaflet and a basemap. It is
+published at
+[shiven-patel.github.io/esser-ventilation-audit/viewer/](https://shiven-patel.github.io/esser-ventilation-audit/viewer/).
+`src/09_docs_html.py` re-emits the manuscript and the computation record as Google
+Docs-ready HTML, and `src/10_viewer_figures.py` crops the viewer screenshots that become
+Figures 9 and 10. Neither changes a number.
 
 Step 4 reads only the CSVs step 3 wrote, so a figure cannot disagree with the number it
 plots. `output/analysis_log.md` is the complete computed record: if a figure in the paper
