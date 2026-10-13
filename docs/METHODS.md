@@ -12,9 +12,12 @@ agencies (school districts).
 
 ## 1. Exposure
 
-**Source.** EPA Toxics Release Inventory Basic Data File, reporting year 2024, national.
-The file has 77,295 rows and 21,482 distinct facilities. A row is a chemical release form.
-One facility in Union County, Arkansas files 218 of them.
+**Source.** EPA Toxics Release Inventory Basic Data File, reporting year 2019, US file,
+the last full reporting year before ESSER was first appropriated (March 2020), so exposure
+precedes any ESSER-funded work. The file has 80,831 rows and 22,255 distinct facilities. A
+row is a chemical release form; the largest single facility files 193 of them. (The
+pipeline was originally built on the RY2024 file, 77,295 rows and 21,482 facilities, which
+still runs through the same script.)
 
 **Aggregation** (`01_build_exposure.py`, `aggregate_tri`). Collapse to the facility by
 `TRIFD`, taking first coordinates and summing releases:
@@ -148,12 +151,21 @@ agency; Vermont links 3.3% because it reports through supervisory unions.
 
 ---
 
-## 4. County covariates
+## 4. County and tract covariates
 
-**Income.** ACS 5-year 2024, table B19013, county median household income. Joined on
-5-digit county FIPS from the NCES `CNTY` field. Matched for 102,045 of 102,069 schools.
+**Vintage.** ACS 5-year 2017-2021, the vintage closest to the ESSER allocations, from the
+Census Bureau's table-based summary file (`acsdt5y2021-b19013.dat`, `acsdt5y2021-b03002.dat`),
+keeping county (summary level 050) and tract (140) rows. Suppressed medians, coded by
+Census as large negative sentinels, are set to missing.
 
-**Race.** ACS 5-year 2024, table B03002. Percent people of color is
+**Income.** Table B19013, median household income. County: joined on 5-digit county FIPS
+from the NCES `CNTY` field, matched for 101,027 of 102,069 schools (Connecticut's 2024-25
+codes are its new planning regions, which the 2021 vintage does not have; Connecticut is
+unlinkable in any case). Tract: each school is assigned to the 2020 census tract containing
+it by point-in-polygon join against `cb_2021_us_tract_500k`; tract income is available for
+101,647 schools.
+
+**Race.** Table B03002, county and tract (tract available for 101,975 schools). Percent people of color is
 
     pct_poc = (1 - B03002_003E / B03002_001E) * 100
 
@@ -162,15 +174,15 @@ Hispanic origin is an ethnicity in the Census framework and B02001 counts many H
 respondents as White alone, which would understate the people-of-color share substantially
 in the Southwest and in south Florida. Matched for 102,048 schools.
 
-Both are county-level and therefore ecological. Every coefficient on them describes a
-county, not a school, and the manuscript says so wherever they appear.
+All are area-level and therefore ecological. Every coefficient on them describes a county
+or tract, not a school.
 
 ---
 
 ## 5. Analysis
 
 **Analytic sample.** Schools in linkable states with a non-missing ventilation answer, a
-computed exposure value, county income and county race. n = 80,308 across 48 states.
+computed exposure value, county income and county race. n = 80,311 across 46 states, DC and Puerto Rico (46,378 funded).
 Listwise deletion; no imputation.
 
 **Confidence intervals on proportions.** Wilson score, not Wald. Several state and tail
@@ -182,29 +194,32 @@ the unit interval.
     A:  HAS_VENT ~ exp10
     B:  HAS_VENT ~ exp10 + inc10k + poc10
     C:  HAS_VENT ~ exp10 + inc10k + poc10 + C(STATE)
+    D:  HAS_VENT ~ exp10 + inc10k + poc10 + tinc10k + tpoc10 + C(STATE)
 
 `exp10` is the normalised index divided by 10, `inc10k` is county median income divided by
 10,000, `poc10` is percent people of color divided by 10. Model C is primary. It is
 estimated on the 44 states with within-state variation in the outcome; states at 0% or 100%
 (Oklahoma, Hawaii, Maryland, Puerto Rico) drop by perfect separation, which is reported
-rather than worked around.
+rather than worked around. Model D adds the school's tract median income (per $10,000) and
+tract percent people of color (per 10 points) to Model C, on the 75,705 schools with both.
 
-Confidence intervals are Wald on the log-odds scale, exponentiated. The C-statistic is the
+Confidence intervals are Wald on the log-odds scale, exponentiated, with standard errors
+clustered by district (LEAID), because ventilation status is recorded once per district and
+copied to every school in it. The C-statistic is the
 Mann-Whitney form of the area under the ROC curve. McFadden's pseudo-R² is reported as an
 index only and is never described as variance explained.
 
-**The tail specification.** Three indicator variables for percentile bands of the
-unnormalised index, with everything below the 95th percentile as reference:
+**The top-of-distribution specification.** Two indicator variables for percentile bands of
+the unnormalised index, with everything at or below the 95th percentile as reference:
 
-    HAS_VENT ~ t95 + t99 + t999 + inc10k + poc10 + C(STATE)
+    HAS_VENT ~ t95 + t99all + inc10k + poc10 + C(STATE)
 
-where `t95` is p95 to p99, `t99` is p99 to p99.9, and `t999` is above p99.9. Quintile and
-tier contrasts average over too many schools to detect a phenomenon confined to a few dozen.
+where `t95` is p95 to p99 and `t99all` is the top 1% (804 schools in the analytic sample).
+The earlier split at p99.9 left 81 schools and is reported only as a supplementary table
+(`tail_odds_split.csv`).
 
-A quadratic in log10 of the unnormalised index is fitted as a check on whether the pattern
-is smooth curvature. It is not: the squared term is not distinguishable from zero
-(*b* = 0.004, *p* = 0.37), so the manuscript describes a rising association with a tail
-break, not an inverted U.
+A quadratic in log10 of the unnormalised index is fitted as a check on curvature. The
+squared term is not distinguishable from zero (*b* = 0.0082, *p* = 0.60).
 
 **Within-state gradient.** For each state, the funded rate in its own top exposure quintile
 minus the rate in its own bottom quintile. Within-state quintiles, so a state is compared
@@ -212,12 +227,9 @@ only against itself and the comparison is unaffected by a state's position in th
 exposure distribution. States with fewer than 50 schools in either band are omitted, which
 leaves 45.
 
-**Clustering.** Not modelled. Each district makes one funding decision covering all of its
-schools, so school-level observations are not independent within districts and the reported
-standard errors are too small. State fixed effects absorb part of this. The direction of
-the bias is known and the tail result, whose confidence interval is wide even without a
-cluster correction, is the least affected by it. A district-clustered specification is the
-obvious next robustness check and is not run here.
+**Clustering.** Each district makes one funding decision covering all of its schools, so
+school-level observations are not independent within districts. Every model uses standard
+errors clustered by district.
 
 ---
 
@@ -237,7 +249,7 @@ The outcome is a binary flag, not a dollar amount. A district that spent $40,000
 and one that spent $12 million on air handlers are recorded identically. The district
 expenditure worksheets contain dollar amounts and are not used here.
 
-County covariates are ecological, and county income is entangled with urbanicity to the
+Area covariates are ecological, and county income is entangled with urbanicity to the
 point where its negative coefficient should not be read as a statement about wealth and
 need. School-level demographics from the Common Core of Data would replace both covariates
 with the population actually inside the building, and are the highest-value next addition.
@@ -248,5 +260,5 @@ industry sectors, so schools near a large non-reporting source score as unexpose
 
 The design is cross-sectional and every estimate is associational.
 
-The tail result rests on 81 schools. Its Wilson interval runs from 33.0% to 54.1%. It
-should be treated as a well-supported hypothesis rather than a settled quantity.
+The top 1% band holds 804 schools; finer cuts of the extreme tail (81 schools above p99.9,
+Wilson interval 38.8% to 60.0%) are too small to interpret.
