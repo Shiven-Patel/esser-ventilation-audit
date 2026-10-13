@@ -9,8 +9,9 @@ analysis. Nothing in them is computed here; they are crops of the browser view
 of viewer/index.html, with a hairline border so the frame edge is visible
 against a white page.
 
-Captured from the viewer after it was rebuilt on the 2019 TRI and 2017-2021 ACS
-data, with the Esri light-grey basemap (the earlier CARTO tiles now require a key).
+Captured from the live GitHub Pages viewer after it was rebuilt on the 2019 TRI
+and 2017-2021 ACS data, with the Esri light-grey basemap (the earlier CARTO tiles
+now require a key). The right-most 10 pixels are trimmed to drop the pointer.
 
 INPUTS   raw screenshots (path given by --src)
 OUTPUTS  output/figures/fig9_viewer_national.png
@@ -22,8 +23,8 @@ from PIL import Image, ImageOps
 
 # (source file, left crop edge) for each output figure.
 JOBS = {
-    'fig9_viewer_national.png':  ('screenshot-1791858243687-2.jpg', 0),
-    'fig10_viewer_oklahoma.png': ('screenshot-1791858259600-3.jpg', 0),
+    'fig9_viewer_national.png':  ('screenshot-1791924773146-0.jpg', 0),
+    'fig10_viewer_oklahoma.png': ('screenshot-1791924809609-2.jpg', 0),
 }
 BORDER = '#bbbbbb'
 
@@ -37,7 +38,7 @@ def main():
 
     for name, (fn, left) in JOBS.items():
         im = Image.open(os.path.join(a.src, fn)).convert('RGB')
-        im = im.crop((left, 0, im.width, im.height))
+        im = im.crop((left, 0, im.width - 10, im.height))
         im = ImageOps.expand(im, border=1, fill=BORDER)
         p = os.path.join(a.outdir, name)
         im.save(p, 'PNG')
