@@ -8,13 +8,14 @@ running the three scripts in order against the files in `data/raw/`.
 Geolocated public schools, NCES EDGE 2024-25: 102,069
 Schools in states with at least one usable NCES district identifier: 86,046
 Schools matched to an ESSER ventilation answer: 80,313 (78.7%)
-Analytic sample (complete cases): 80,308 schools in 48 states
+Analytic sample (complete cases): 80,311 schools in 48 states
 
 States excluded for having no usable identifier on any LEA record: ['AZ', 'CT', 'TX', 'VI', 'WA']
 These states reported ventilation status for every LEA; the identifier field is blank.
 Their LEA-level rates are reported in output/coverage_by_state.csv and in the paper,
 but they cannot enter a school-level model.
 
+Funded schools, analytic sample: 46,378 of 80,311
 Overall funded rate, analytic sample: 57.7% (Wilson 95% CI 57.4-58.1)
 The same figure with unmatched schools read as unfunded: 53.9%
 The gap between those two numbers is the entire source of the original
@@ -34,126 +35,137 @@ All three           23.6
 By quintile of the canonical exposure index (primary stratification):
            n  funded_pct  ci_lo  ci_hi  mean_poc  med_income
 exp_q                                                       
-Q1     16062        53.1   52.4   53.9      32.2     71667.0
-Q2     16061        53.5   52.7   54.3      33.5     76945.0
-Q3     16062        58.4   57.7   59.2      37.8     79357.0
-Q4     16061        59.0   58.2   59.7      40.9     78958.0
-Q5     16062        64.7   63.9   65.4      41.0     74207.5
+Q1     16063        51.9   51.2   52.7      29.7     60378.0
+Q2     16062        54.0   53.2   54.8      33.1     66317.0
+Q3     16062        57.6   56.8   58.3      35.9     67826.0
+Q4     16062        59.3   58.6   60.1      38.1     67675.0
+Q5     16062        65.9   65.2   66.6      38.2     62911.0
 
 By the original fixed tier cutoffs (for comparability):
                 n  funded_pct  ci_lo  ci_hi  mean_poc  med_income
 tier                                                             
-Negligible  31530        53.3   52.8   53.9      32.9     74329.0
-Minimal     41186        59.5   59.1   60.0      39.6     78476.0
-Low          4206        65.9   64.5   67.3      41.3     73021.0
-Moderate     1776        69.9   67.8   72.0      42.6     73331.0
-High          558        69.7   65.8   73.4      40.4     71721.0
-Critical     1052        61.1   58.1   64.0      36.9     70493.0
+Negligible  29712        52.8   52.2   53.3      31.2     63159.0
+Minimal     42442        59.5   59.1   60.0      37.2     66709.0
+Low          4766        67.6   66.3   68.9      39.3     63177.0
+Moderate     1732        67.0   64.7   69.1      36.6     61633.0
+High          592        67.4   63.5   71.1      34.6     60800.0
+Critical     1067        60.8   57.9   63.7      33.8     60382.0
 
-By percentile band of the canonical index, narrowing towards the tail:
-               n  funded_pct  ci_lo  ci_hi median_index_raw  mean_poc  med_income
-band                                                                             
-p0-50      40154        54.2   53.7   54.7              230      33.5       75594
-p50-80     24092        59.0   58.4   59.6         2.31e+03      40.4       79068
-p80-90      8031        63.1   62.0   64.1         7.26e+03      41.1       75613
-p90-95      4015        64.9   63.4   66.4          1.7e+04      41.0       72839
-p95-99      3212        70.0   68.4   71.6         4.37e+04      41.9       72884
-p99-99.9     723        59.2   55.6   62.7         2.15e+05      36.5       70377
-p99.9-100     81        43.2   33.0   54.1         1.93e+06      37.6       67917
+By percentile band of the canonical index (top 1% as one band):
+             n  funded_n  funded_pct  ci_lo  ci_hi median_index_raw  mean_poc  med_income
+band                                                                                     
+p0-50    40155     21602        53.8   53.3   54.3              302      32.1       64210
+p50-80   24093     14191        58.9   58.3   59.5          2.8e+03      37.8       67753
+p80-90    8031      5244        65.3   64.2   66.3         8.77e+03      38.8       64164
+p90-95    4016      2719        67.7   66.2   69.1         1.89e+04      39.4       64091
+p95-99    3212      2151        67.0   65.3   68.6         4.72e+04      36.6       61182
+p99-100    804       471        58.6   55.1   61.9         2.57e+05      33.2       60354
 
-Schools above the 99.9th percentile: 81 across 26 states. Largest concentrations: FL 9, IL 9, LA 8, OK 7, IN 5.
-Their median unnormalised index is 44 times that of the p95-99 band.
+Supplementary: the top bands split at the 99.9th percentile:
+              n  funded_n  funded_pct  ci_lo  ci_hi median_index_raw  mean_poc  med_income
+band                                                                                      
+p95-99     3212      2151        67.0   65.3   68.6         4.72e+04      36.6       61182
+p99-99.9    723       431        59.6   56.0   63.1         2.28e+05      33.5       60473
+p99.9-100    81        40        49.4   38.8   60.0         2.22e+06      30.0       58433
+
+Schools above the 99th percentile: 804 across 42 states. Largest concentrations: LA 83, IL 59, OH 58, CA 40, MN 38.
+Their median unnormalised index is 5 times that of the p95-99 band.
 
 ## D. The same stratification under all four exposure specifications
 
 variant   E_air  E_fac  E_forms  E_isq
 quintile                              
-Q1         53.1   48.3     49.4   48.6
-Q2         53.5   57.0     57.2   59.0
-Q3         58.4   59.3     56.1   57.4
-Q4         59.0   57.6     58.7   59.1
-Q5         64.7   66.6     67.3   64.7
+Q1         51.9   48.2     49.1   48.8
+Q2         54.0   57.4     57.5   58.8
+Q3         57.6   59.0     56.5   57.7
+Q4         59.3   57.5     58.4   58.4
+Q5         65.9   66.7     67.2   65.0
 
-The gradient is present under every specification. Its shape is not: the two
-corrected indices turn over at the top quintile, and the published index does not.
+Compare the lowest and highest quintile under each specification.
 
 Schools per fixed tier under each specification:
             E_air  E_isq  E_fac  E_forms
-Negligible  31530  15942   2645     2320
-Minimal     41186  45108  12548     4963
-Low          4206  12378  13332     7311
-Moderate     1776   4431  20868    16619
-High          558   1231  18068    20895
-Critical     1052   1218  12847    28200
+Negligible  29712  16195   2606     2226
+Minimal     42442  45111  12325     4781
+Low          4766  12163  13127     6955
+Moderate     1732   4387  20653    16550
+High          592   1236  17814    20169
+Critical     1067   1219  13786    29630
 
 ## E. Correlations, school level
 
-  E_air    vs % people of color: r = +0.046   vs county median income: r = -0.075
-  E_isq    vs % people of color: r = +0.146   vs county median income: r = +0.036
-  E_fac    vs % people of color: r = +0.391   vs county median income: r = +0.320
-  E_forms  vs % people of color: r = +0.323   vs county median income: r = +0.262
-  county income vs % people of color: r = +0.129
+  E_air    vs % people of color: r = +0.025   vs county median income: r = -0.072
+  E_isq    vs % people of color: r = +0.153   vs county median income: r = +0.048
+  E_fac    vs % people of color: r = +0.385   vs county median income: r = +0.335
+  E_forms  vs % people of color: r = +0.308   vs county median income: r = +0.274
+  county income vs % people of color: r = +0.085
 
 ## F. Logistic regression
 
-Model C is estimated on the 44 states with within-state variation (n = 75,961).
+Model C is estimated on the 44 states with within-state variation (n = 75,964).
 States dropped by perfect separation: ['HI', 'MD', 'OK', 'PR']
 Oklahoma separates because it is a genuine statewide zero, which is worth stating
 rather than hiding: no fixed-effects model can use a state with no variation.
 
-                                           n  C_statistic  pseudo_R2   exposure_per_10pts exposure_per_10pts_p       income_per_10k income_per_10k_p     pct_poc_per_10pp pct_poc_per_10pp_p
-model                                                                                                                                                                                       
-A. exposure only                       80308        0.550     0.0016  1.077 (1.065-1.090)             3.14e-37                  NaN              NaN                  NaN                NaN
-B. + county income + % POC             80308        0.652     0.0560  1.044 (1.032-1.056)             3.09e-13  0.913 (0.907-0.919)        2.34e-162  1.302 (1.293-1.312)           0.00e+00
-C. + state fixed effects               75961        0.733     0.1238  1.043 (1.030-1.056)             6.46e-11  0.862 (0.855-0.870)        7.53e-233  1.261 (1.248-1.275)           0.00e+00
-S. state fixed effects only            75961        0.701     0.0956                  NaN                  NaN                  NaN              NaN                  NaN                NaN
-B'. covariates only, Model C's sample  75961        0.657     0.0541  1.050 (1.038-1.063)             1.32e-15  0.879 (0.873-0.885)        2.52e-287  1.300 (1.290-1.310)           0.00e+00
+                                           n  C_statistic  pseudo_R2   exposure_per_10pts exposure_per_10pts_p       income_per_10k income_per_10k_p     pct_poc_per_10pp pct_poc_per_10pp_p tract_income_per_10k tract_income_per_10k_p tract_pct_poc_per_10pp tract_pct_poc_per_10pp_p
+model                                                                                                                                                                                                                                                                                   
+A. exposure only                       80311        0.558     0.0015  1.075 (1.026-1.127)             2.48e-03                  NaN              NaN                  NaN                NaN                  NaN                    NaN                    NaN                      NaN
+B. + county income + % POC             80311        0.652     0.0558  1.053 (1.013-1.096)             9.85e-03  0.906 (0.867-0.947)         1.38e-05  1.297 (1.239-1.358)           1.37e-28                  NaN                    NaN                    NaN                      NaN
+C. + state fixed effects               75964        0.733     0.1237  1.041 (1.003-1.080)             3.52e-02  0.848 (0.810-0.888)         2.57e-12  1.258 (1.189-1.332)           1.79e-15                  NaN                    NaN                    NaN                      NaN
+D. + tract income + tract % POC        75705        0.741     0.1330  1.015 (0.980-1.051)             4.14e-01  0.898 (0.856-0.943)         1.46e-05  1.164 (1.099-1.234)           2.33e-07  0.950 (0.935-0.964)               3.10e-11    1.091 (1.060-1.123)                 4.11e-09
+S. state fixed effects only            75964        0.701     0.0956                  NaN                  NaN                  NaN              NaN                  NaN                NaN                  NaN                    NaN                    NaN                      NaN
+B'. covariates only, Model C's sample  75964        0.657     0.0539  1.057 (1.015-1.101)             7.88e-03  0.868 (0.828-0.909)         2.57e-09  1.293 (1.233-1.357)           1.09e-25                  NaN                    NaN                    NaN                      NaN
 
-Attenuation check, Model C without county race: exposure aOR 1.083 (1.069-1.096); adding race gives 1.043 (1.030-1.056).
+Attenuation check, Model C without county race: exposure aOR 1.071 (1.026-1.118); adding race gives 1.041 (1.003-1.080).
 
 Adjusted odds of ventilation funding by exposure quintile (ref = Q1, lowest):
             aOR     lo     hi         p
 quintile                               
-Q2        0.996  0.945  1.050  8.81e-01
-Q3        1.118  1.058  1.181  6.99e-05
-Q4        1.063  1.005  1.125  3.29e-02
-Q5        1.324  1.251  1.402  5.89e-22
+Q2        0.972  0.828  1.141  7.29e-01
+Q3        1.053  0.877  1.266  5.79e-01
+Q4        1.039  0.852  1.267  7.02e-01
+Q5        1.356  1.086  1.693  7.15e-03
 
-Adjusted odds of ventilation funding at the top of the exposure distribution,
-reference = everything below the 95th percentile, with state fixed effects:
+Adjusted odds at the top of the exposure distribution (top 1% as one band),
+reference = everything at or below the 95th percentile, with state fixed effects:
+            n  aOR_vs_below_p95     lo     hi         p
+band                                                   
+p95-99   3039             1.321  1.072  1.629  9.08e-03
+p99-100   760             0.929  0.696  1.240  6.18e-01
+
+Supplementary: the same model with the top 1% split at the 99.9th percentile:
              n  aOR_vs_below_p95     lo     hi         p
 band                                                    
-p95-99    3039             1.438  1.319  1.567  1.48e-16
-p99-99.9   684             1.043  0.883  1.234  6.19e-01
-top 0.1%    76             0.431  0.267  0.696  5.77e-04
+p95-99    3039             1.321  1.072  1.629  9.05e-03
+p99-99.9   684             0.972  0.731  1.294  8.47e-01
+top 0.1%    76             0.627  0.295  1.332  2.24e-01
 
-Quadratic in log10 exposure: linear b = 0.0710 (p = 2.75e-03); squared b = 0.0041 (p = 3.68e-01).
-The squared term is not distinguishable from zero, so the pattern is not a
-smooth inverted U. The association rises across the bulk of the distribution
-and then breaks at the extreme tail. Reporting it as curvature would overstate
-what the data show.
+Quadratic in log10 exposure: linear b = 0.0525 (p = 5.12e-01); squared b = 0.0082 (p = 5.98e-01).
+A squared term distinguishable from zero would indicate curvature (for example an
+inverted U). Read it against its p-value; the band model above is the direct test
+of the top of the distribution.
 
-Exposure x county-race interaction: OR 1.0244 (1.0174-1.0315), p = 6.09e-12
+Exposure x county-race interaction: OR 1.0238 (0.9989-1.0494), p = 6.13e-02
 
 ## G. Funded rate by county composition
 
 By quintile of % people of color:
         n  funded_pct  ci_lo  ci_hi  mean_poc  med_income
 _q                                                       
-P1  16062        47.3   46.5   48.0       9.9     68356.0
-P2  16061        47.2   46.4   47.9      21.1     76945.0
-P3  16062        51.1   50.3   51.9      33.6     79623.0
-P4  16061        63.6   62.8   64.3      49.1     79071.0
-P5  16062        79.6   79.0   80.2      71.8     83498.0
+P1  16063        46.9   46.1   47.7       8.3     58845.0
+P2  16062        47.4   46.6   48.2      18.8     66605.5
+P3  16062        50.9   50.1   51.7      31.0     66480.0
+P4  16062        64.1   63.3   64.8      46.8     65999.0
+P5  16062        79.5   78.9   80.1      70.1     70287.0
 
 By quintile of county median income:
         n  funded_pct  ci_lo  ci_hi  mean_poc  med_income
 _q                                                       
-I1  16062        61.0   60.3   61.8      35.9     56435.0
-I2  16061        55.2   54.4   56.0      31.1     66679.0
-I3  16062        59.7   58.9   60.4      32.9     76472.0
-I4  16061        61.5   60.7   62.2      43.2     88766.0
-I5  16062        51.3   50.6   52.1      42.4    110416.0
+I1  16063        62.1   61.3   62.8      34.5     47901.0
+I2  16062        56.7   56.0   57.5      31.3     57409.0
+I3  16062        58.2   57.4   58.9      29.5     64964.0
+I4  16062        60.7   59.9   61.4      41.0     75853.0
+I5  16062        51.1   50.3   51.8      38.7     95935.0
 
 ## I. Within-state exposure gradient
 
@@ -163,63 +175,63 @@ fewer than 50 schools in either band are omitted.
 
        n_hi  n_lo  funded_hi  funded_lo  gap_pts
 state                                           
-NM      161   263       20.5       55.9    -35.4
-SC      252   252       51.6       81.0    -29.4
-AR      215   216       24.7       44.9    -20.3
-WV      139   139       42.4       61.9    -19.4
-AL      304   304       50.3       69.4    -19.1
-WY       69   115       30.4       43.5    -13.0
-MS      200   201       61.0       73.1    -12.1
-VA      412   412       86.7       96.1     -9.5
-ND      104   144       51.9       56.9     -5.0
-MN      557   560       23.7       25.0     -1.3
-OH      699   699       58.7       59.7     -1.0
+SC      252   252       51.6       79.4    -27.8
+NM      162   234       27.2       50.9    -23.7
+WV      139   139       41.7       62.6    -20.9
+AR      215   215       29.3       49.3    -20.0
+NV      149   150       40.3       59.3    -19.1
+MS      200   200       61.5       76.0    -14.5
+AL      304   304       54.6       68.1    -13.5
+VA      412   412       82.8       96.1    -13.3
+WY       69   126       34.8       42.1     -7.3
+ND      104   170       46.2       48.8     -2.7
+OK      354   354        0.0        0.0      0.0
 PR      173   173      100.0      100.0      0.0
-MD      283   284      100.0      100.0      0.0
 HI       60    60      100.0      100.0      0.0
-OK      354   355        0.0        0.0      0.0
-IN      317   317       56.5       55.8      0.6
-CO      380   381       12.9       12.1      0.8
-KY      300   300       73.0       70.7      2.3
-PA      583   583       52.0       48.0      3.9
-FL      861   861       77.8       72.7      5.1
-SD      141   206       59.6       53.9      5.7
-MO      476   477       45.8       39.2      6.6
-ME      113   114       66.4       59.6      6.7
-WI      436   436       48.9       42.0      6.9
-ID      160   160       74.4       65.0      9.4
-NV      149   149       59.7       49.7     10.1
-MI      658   658       55.6       43.6     12.0
-LA      261   261       92.3       78.5     13.8
-NY      614   614       52.4       37.0     15.5
-KS      270   270       58.9       42.2     16.7
-NJ      504   504       83.9       67.1     16.9
-NC      542   542       82.7       64.8     17.9
-TN      378   378       86.2       68.3     18.0
-MT      172   426       64.5       44.8     19.7
-OR      250   250       83.6       63.6     20.0
-MA      363   363       57.0       36.6     20.4
-CA     1852  1852       87.6       67.1     20.5
-IA      267   267       59.2       37.5     21.7
-UT      223   223       54.3       30.5     23.8
-AK      101   252       46.5       20.2     26.3
-RI       63    63       77.8       49.2     28.6
-IL      798   799       89.8       58.6     31.3
-NH       93    93       43.0        9.7     33.3
-NE      212   213       67.0       33.3     33.6
-GA      467   467       67.5       33.2     34.3
+MD      283   283      100.0      100.0      0.0
+CO      380   382       12.9       12.0      0.9
+FL      861   861       79.6       78.3      1.3
+OH      699   699       60.1       58.1      2.0
+KY      300   300       73.7       71.3      2.3
+IN      317   317       57.1       53.6      3.5
+AK      101   240       26.7       22.5      4.2
+MO      476   477       45.2       40.9      4.3
+WI      436   436       49.3       42.7      6.7
+SD      141   199       59.6       52.8      6.8
+PA      583   583       55.7       47.7      8.1
+ID      160   162       75.0       66.7      8.3
+LA      261   261       91.6       82.0      9.6
+MN      557   557       32.5       22.8      9.7
+ME      113   113       69.0       58.4     10.6
+MI      658   659       53.8       40.5     13.3
+TN      378   378       82.8       68.3     14.6
+NJ      504   504       80.8       65.9     14.9
+OR      250   250       81.6       66.0     15.6
+MT      171   422       62.6       45.7     16.8
+GA      467   467       56.7       39.2     17.6
+KS      270   270       57.4       38.9     18.5
+MA      363   364       58.4       39.8     18.6
+NY      614   614       55.5       34.5     21.0
+NC      542   543       83.2       61.7     21.5
+CA     1852  1854       88.6       66.3     22.3
+IA      268   268       59.7       36.9     22.8
+UT      223   223       55.2       28.7     26.5
+RI       63    63       79.4       49.2     30.2
+IL      798   798       88.6       55.4     33.2
+NH       93    94       46.2        8.5     37.7
+NE      212   212       73.1       34.4     38.7
 
-States with a negative gap: 11 of 45
+States with a negative gap: 10 of 45
 
 ## J. Regional cases, corrected
 
                   state             county  schools  matched_to_ESSER  pct_matched  funded_pct_matched_only  funded_pct_blank_as_zero  mean_exposure  pct_poc  county_income
 case                                                                                                                                                                        
-South Bronx          NY       Bronx County      471                58         12.3                     44.8                       5.5           2.62     91.3          48676
-Albuquerque          NM  Bernalillo County      208               191         91.8                      2.1                       1.9           1.26     62.9          69473
-Gary / NW Indiana    IN        Lake County      121                99         81.8                     38.4                      31.4          41.52     48.6          71493
-Houston              TX      Harris County     1201                 0          0.0                      NaN                       0.0          20.11     73.4          74983
-Oklahoma City        OK    Oklahoma County      220               216         98.2                      0.0                       0.0           2.66     47.9          66679
+South Bronx          NY       Bronx County      471                58         12.3                     44.8                       5.5           2.08     91.0          43726
+Albuquerque          NM  Bernalillo County      208               191         91.8                      2.1                       1.9           0.57     62.8          56920
+Gary / NW Indiana    IN        Lake County      121                99         81.8                     38.4                      31.4          20.14     46.8          62052
+Houston              TX      Harris County     1201                 0          0.0                      NaN                       0.0          19.74     71.7          65788
+Oklahoma City        OK    Oklahoma County      220               216         98.2                      0.0                       0.0           1.87     45.3          58239
 
 The last two columns are the whole story. Where school-level coverage is high
 (Albuquerque, 91.8%) the two codings agree and the finding is real. Where it is low
