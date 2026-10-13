@@ -201,13 +201,14 @@ def main():
     ap.add_argument("--tri", default="data/raw/epa_tri_national.csv")
     ap.add_argument("--schools", default="data/raw/EDGE_GEOCODE_PUBLICSCH_2425.TXT")
     ap.add_argument("--outdir", default="data/derived")
+    ap.add_argument("--year", default="2019", help="TRI reporting year, label only")
     a = ap.parse_args()
     os.makedirs(a.outdir, exist_ok=True)
 
     print("--- 1. LOADING ---")
     fac = aggregate_tri(a.tri)
     sch = load_schools(a.schools)
-    fac.to_csv(os.path.join(a.outdir, "tri_facilities_2024.csv"), index=False)
+    fac.to_csv(os.path.join(a.outdir, f"tri_facilities_{a.year}.csv"), index=False)
 
     s_rad = np.deg2rad(sch[["LAT", "LON"]].to_numpy(dtype=float))
     f_rad = np.deg2rad(fac[["lat", "lon"]].to_numpy(dtype=float))

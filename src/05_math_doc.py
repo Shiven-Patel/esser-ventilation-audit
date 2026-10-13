@@ -88,30 +88,32 @@ def main():
           '<th>Used for</th></tr>'
           '<tr><td>EDGE_GEOCODE_PUBLICSCH_2425.TXT</td><td>NCES</td><td>2024-25</td>'
           '<td>102,178</td><td>school coordinates, LEAID, county FIPS</td></tr>'
-          '<tr><td>epa_tri_national.csv</td><td>EPA TRI</td><td>RY2024</td>'
-          '<td>77,295</td><td>facility coordinates and air releases</td></tr>'
+          '<tr><td>tri_2019_us.csv</td><td>EPA TRI Basic Data File</td><td>RY2019</td>'
+          '<td>80,831</td><td>facility coordinates and air releases (before ESSER)</td></tr>'
           '<tr><td>esf_hvac_spending.xlsx (crossact)</td><td>ED OESE</td><td>FY2023 APR</td>'
-          '<td>18,804</td><td>district ventilation / cleaning / PPE flags</td></tr>'
+          '<td>18,804</td><td>district ventilation / cleaning / mask-use flags</td></tr>'
           '<tr><td>esf_hvac_spending.xlsx (prime)</td><td>ED OESE</td><td>FY2023 APR</td>'
           '<td>52</td><td>state allocation, expenditure, remaining</td></tr>'
-          '<tr><td>ACSDT5Y2024.B19013-Data.csv</td><td>Census ACS</td><td>2024 5-yr</td>'
-          '<td>3,222</td><td>county median household income</td></tr>'
-          '<tr><td>ACSDT5Y2024.B03002-Data.csv</td><td>Census ACS</td><td>2024 5-yr</td>'
-          '<td>3,222</td><td>county race by Hispanic origin</td></tr></table>']
+          '<tr><td>acs2021_5yr_county_tract.csv</td><td>Census ACS table-based summary file</td>'
+          '<td>2017-2021 5-yr</td><td>3,221 counties + 85,395 tracts</td>'
+          '<td>median household income (B19013) and race by Hispanic origin (B03002), county and tract</td></tr>'
+          '<tr><td>cb_2021_us_tract_500k.shp</td><td>Census cartographic boundaries</td><td>2021 (2020 tracts)</td>'
+          '<td>tract polygons</td><td>point-in-polygon assignment of each school to its tract</td></tr></table>']
 
     # ---------------------------------------------------------------- exposure
     H += ['<h2>1. Exposure index</h2>',
           '<h3>1.1 Facility aggregation</h3>',
-          '<p>The TRI Basic Data File is chemical-release-form level. 77,295 rows describe '
-          '21,482 facilities; the largest single facility files 218 forms. Aggregate first:</p>',
+          '<p>The TRI Basic Data File is chemical-release-form level. In reporting year 2019, '
+          '80,831 rows describe 22,255 facilities; the largest single facility files 193 forms. '
+          'Aggregate first:</p>',
           '<pre class="formula">m_f = SUM over that facility\'s forms of '
-          '( "5.1 - FUGITIVE AIR" + "5.2 - STACK AIR" )   [pounds, 2024]</pre>',
+          '( "5.1 - FUGITIVE AIR" + "5.2 - STACK AIR" )   [pounds, 2019]</pre>',
           '<p class="note">Fugitive plus stack air is the airborne fraction. Total releases '
           '(column 107) includes water, land and underground injection, which do not reach a '
           'school through its ventilation system. Negative values, which EPA uses for '
           'data-entry corrections, are clipped to zero.</p>',
           src('<code>src/01_build_exposure.py</code>, function <code>aggregate_tri</code>. '
-              'Writes <code>data/derived/tri_facilities_2024.csv</code>.'),
+              'Writes <code>data/derived/tri_facilities_2019.csv</code>.'),
 
           '<h3>1.2 The index</h3>',
           '<pre class="formula">E_s = SUM over facilities f with d_sf &lt;= 50 km of\n'
@@ -119,8 +121,8 @@ def main():
           'd_sf   great-circle chord distance, cKDTree on radian coordinates,\n'
           '       multiplied by 6371 km. At 50 km the chord understates the arc\n'
           '       by under 0.1 percent.\n'
-          'k      500 nearest facilities retained. The cap never binds: the median\n'
-          '       school has 50 TRI facilities within 50 km.\n'
+          'k      500 nearest facilities retained. The cap binds for 0.09 percent\n'
+          '       of schools; the median school has 53 TRI facilities within 50 km.\n'
           '0.1 km distance floor. A school is a building, not a point, and no school\n'
           '       sits inside a fenceline. Caps one facility\'s contribution at m_f/0.01.</pre>',
           '<h3>1.3 Normalisation</h3>',
@@ -135,22 +137,23 @@ def main():
           '<h3>1.4 The four specifications, and what separates them</h3>',
           '<table><tr><th>Column</th><th>Point cloud</th><th>Denominator</th><th>k</th>'
           '<th>Weight</th></tr>'
-          '<tr><td>E_forms</td><td>chemical forms (77,295)</td><td>d&sup2; + 1e-5 (rad&sup2;)</td>'
+          '<tr><td>E_forms (version A)</td><td>chemical forms (80,831)</td><td>d&sup2; + 1e-5 (rad&sup2;)</td>'
           '<td>50</td><td>none</td></tr>'
-          '<tr><td>E_fac</td><td>facilities (21,482)</td><td>d&sup2; + 1e-5 (rad&sup2;)</td>'
+          '<tr><td>E_fac (version B)</td><td>facilities (22,255)</td><td>d&sup2; + 1e-5 (rad&sup2;)</td>'
           '<td>50</td><td>none</td></tr>'
-          '<tr><td>E_isq</td><td>facilities</td><td>max(d, 0.1 km)&sup2; in km&sup2;</td>'
+          '<tr><td>E_isq (version C)</td><td>facilities</td><td>max(d, 0.1 km)&sup2; in km&sup2;</td>'
           '<td>500</td><td>none</td></tr>'
-          '<tr><td>E_air (canonical)</td><td>facilities</td>'
+          '<tr><td>E_air (version D, used in the paper)</td><td>facilities</td>'
           '<td>max(d, 0.1 km)&sup2; in km&sup2;</td><td>500</td><td>air releases, lbs</td></tr>'
           '</table>',
-          '<p><code>E_forms</code> reproduces the previously published index at Pearson '
-          'r = 0.99998 and exists only so the comparison is verifiable.</p>',
+          '<p><code>E_forms</code> applies the method of the previously published index; on the '
+          '2024 file it reproduced that index at Pearson r = 0.99998. It exists only so the '
+          'comparison is verifiable.</p>',
           tbl(R('tier_counts_by_variant.csv'), 'Tier', '{:,.0f}'),
           '<div class="flag"><b>Why this matters.</b> Identical cutpoints, four '
-          'specifications, and the count of "Critical" schools moves from 28,200 to 1,052. '
-          'Aggregating to facilities alone changes the tier of 56.8 percent of schools; '
-          'replacing the softening constant with a physical floor changes 94.4 percent. '
+          'specifications, and the count of "Critical" schools moves from 29,630 to 1,067. '
+          'Aggregating to facilities alone changes the tier of 58.2 percent of analytic-sample '
+          'schools; replacing the softening constant with a physical floor changes 94.6 percent. '
           'The legacy denominator added 1e-5 to a squared <i>radian</i> distance: a facility '
           '20 km away has d&sup2; = 9.9e-6, smaller than the constant, so across the full '
           '0 to 50 km range the weight ratio was 7.2 : 1 where a true inverse square gives '
@@ -182,7 +185,8 @@ def main():
               'State', '{:,.1f}'),
           '<div class="flag"><b>Arizona, Connecticut, Texas and Washington answered the '
           'ventilation question for all 2,297 of their districts and left the NCES '
-          'identifier blank on every row.</b> 16,023 schools are therefore unlinkable. A '
+          'identifier blank on every row.</b> Their 16,002 schools are therefore unlinkable (16,023 '
+          'with the 21 U.S. Virgin Islands schools, which have no ESSER record). A '
           'pipeline that infers reporting status from a failed join reads this as '
           '"did not report", which is false. Their measured district-level rates are '
           'Arizona 41.4, Connecticut 41.0, Texas 23.4, Washington 52.3 percent.</div>',
@@ -197,7 +201,11 @@ def main():
           '<pre class="formula">analytic sample = schools in linkable states\n'
           '   AND HAS_VENT observed  AND exposure observed\n'
           '   AND county income observed  AND county race observed\n'
-          ' = 80,308 schools across 48 states</pre>',
+          ' = 80,311 schools across 46 states, DC and Puerto Rico\n\n'
+          '102,069 geolocated\n'
+          ' - 16,023 in AZ, CT, TX, WA (no identifiers) and VI (no record)  = 86,046\n'
+          ' -  5,735 not linked to a district answer (NY 1,796, CA 1,148, IL 451, ...)\n'
+          ' = 80,311   (46,378 funded)</pre>',
           '<p>Recorded ventilation funding: <b>57.7 percent</b> (Wilson 95 percent CI 57.4 '
           'to 58.1). Wilson rather than Wald because several state and tail cells sit at or '
           'near 0 and 100 percent, where the normal approximation leaves the unit interval.</p>',
@@ -209,12 +217,13 @@ def main():
     H += ['<h2>4. Exposure and funding</h2>',
           '<h3>4.1 By percentile band of the unnormalised index</h3>',
           tbl(R('funded_by_exposure_percentile_band.csv'), 'Band', '{:,.1f}'),
-          '<p>The rise from 54.2 to 70.0 percent across the first five bands, then the fall '
-          'to 43.2 percent among the 81 schools above the 99.9th percentile, is the '
-          'manuscript\'s central result. A tail result carried by one state\'s reporting '
-          'practice would be a different finding, so here is where those 81 schools are: '
+          '<p>The rate rises from 53.8 percent below the median to 67.7 and 67.0 percent in the '
+          '90-95 and 95-99 bands, and is 58.6 percent in the top 1 percent (804 schools). The top '
+          'band is one band because the split at the 99.9th percentile leaves 81 schools; that '
+          'split is shown below for completeness only. The top 1 percent by state: '
           + ', '.join(f'{s} {int(n)}' for s, n in
                       R('top_band_states.csv').schools.items()) + '.</p>',
+          tbl(R('funded_by_exposure_percentile_band_split.csv'), 'Band (supplementary split)', '{:,.1f}'),
           '<h3>4.2 The same cut under all four exposure specifications</h3>',
           tbl(R('sensitivity_exposure.csv').reset_index().pivot(
               index='quintile', columns='variant', values='funded_pct'), 'Quintile'),
@@ -224,35 +233,37 @@ def main():
     H += ['<h2>5. Models</h2>',
           '<pre class="formula">A:  HAS_VENT ~ exp10\n'
           'B:  HAS_VENT ~ exp10 + inc10k + poc10\n'
-          'C:  HAS_VENT ~ exp10 + inc10k + poc10 + C(STATE)     [primary]\n\n'
+          'C:  HAS_VENT ~ exp10 + inc10k + poc10 + C(STATE)     [primary]\n'
+          'D:  HAS_VENT ~ exp10 + inc10k + poc10 + tinc10k + tpoc10 + C(STATE)\n\n'
           'exp10  = EXPOSURE / 10          inc10k = county median income / 10,000\n'
-          'poc10  = percent people of color / 10\n\n'
-          'aOR    = exp(b);  95% CI = exp(b +/- 1.96*SE)\n'
+          'poc10  = county percent people of color / 10\n'
+          'tinc10k, tpoc10 = the same two measures for the school\'s own census tract\n\n'
+          'aOR    = exp(b);  95% CI = exp(b +/- 1.96*SE), SE clustered by district (LEAID)\n'
           'C-stat = Mann-Whitney form of the ROC area, midranks for ties</pre>',
           tbl(R('models.csv'), 'Model', sig=3),
           '<p class="note">Models S and B&#39; exist so that "does the state predict better '
           'than the school\'s own environment" is answered rather than asserted. A and B are '
           'fitted on the full analytic sample and C on the mixed-state subset, so their '
-          'C-statistics are not comparable; S and B&#39; are both fitted on C\'s 75,961 '
+          'C-statistics are not comparable; S and B&#39; are both fitted on C\'s 75,964 '
           'schools. State indicators alone give 0.701, the three covariates alone 0.657, '
           'together 0.733.</p>',
           '<p class="note">Model C is estimated on the 44 states with within-state variation. '
           'Oklahoma, Hawaii, Maryland and Puerto Rico drop by perfect separation, which is '
           'reported rather than worked around. Adding county race attenuates the exposure '
-          'aOR from 1.083 to 1.043. McFadden\'s pseudo-R&sup2; is an index, not variance '
+          'aOR from 1.071 to 1.041. Model D is fitted on the 75,705 of those schools with tract measures. McFadden\'s pseudo-R&sup2; is an index, not variance '
           'explained.</p>',
           '<h3>5.1 The tail specification</h3>',
-          '<pre class="formula">HAS_VENT ~ t95 + t99 + t999 + inc10k + poc10 + C(STATE)\n\n'
-          't95  = 1 if percentile in (95, 99]        of E_air_raw\n'
-          't99  = 1 if percentile in (99, 99.9]\n'
-          't999 = 1 if percentile &gt; 99.9\n'
+          '<pre class="formula">HAS_VENT ~ t95 + t99all + inc10k + poc10 + C(STATE)\n\n'
+          't95    = 1 if percentile in (95, 99]        of E_air_raw\n'
+          't99all = 1 if percentile &gt; 99\n'
           'reference = everything at or below the 95th percentile</pre>',
           tbl(R('tail_odds.csv'), 'Band', sig=3),
+          '<p class="note">Supplementary: the same model with the top 1 percent split at the 99.9th percentile.</p>',
+          tbl(R('tail_odds_split.csv'), 'Band', sig=3),
           '<p class="note">Quintile and tier contrasts average over 16,000 schools each and '
           'cannot detect a phenomenon confined to a few dozen. A quadratic in log10 exposure '
           'is fitted as a check on smooth curvature and is not distinguishable from zero '
-          '(b = 0.004, p = 0.37), so the pattern is a rising association with a tail break, '
-          'not an inverted U.</p>',
+          '(squared-term b = 0.0082, p = 0.60), so the data give no evidence of curvature.</p>',
           '<h3>5.2 Adjusted odds by exposure quintile</h3>',
           tbl(R('exposure_quintile_odds.csv'), 'Quintile', sig=3)]
 
@@ -264,11 +275,11 @@ def main():
           '<p class="note">B03002 rather than B02001: Hispanic origin is an ethnicity in the '
           'Census framework, and B02001 counts many Hispanic respondents as White alone, '
           'which would understate the people-of-color share heavily in the Southwest and '
-          'south Florida.</p>',
+          'south Florida. The same formula is applied to tract-level B03002 for Model D.</p>',
           tbl(R('funded_by_pct_poc_quintile.csv'), 'Quintile', '{:,.1f}'),
           '<h3>6.2 By county median household income</h3>',
           tbl(R('funded_by_median_income_quintile.csv'), 'Quintile', '{:,.1f}'),
-          '<p class="note">Both covariates are county-level and therefore ecological. County '
+          '<p class="note">Both covariates are area-level (county, and tract in Model D) and therefore ecological. County '
           'income is entangled with urbanicity to the point where its negative coefficient '
           'should not be read as a statement about wealth and need.</p>']
 
@@ -309,17 +320,14 @@ def main():
 
     H += ['<h2>10. What is not modelled</h2>',
           '<p>Each district makes one funding decision covering all of its schools, so '
-          'school-level observations are not independent within districts and the reported '
-          'standard errors are too small. State fixed effects absorb part of this. A '
-          'district-clustered specification is the obvious next robustness check and is not '
-          'run here. The outcome is a binary flag, not a dollar amount: a district that '
+          'school-level observations are not independent within districts, so '
+          'every model uses standard errors clustered by district. The outcome is a binary flag, not a dollar amount: a district that '
           'spent forty thousand dollars on filters and one that spent twelve million on air '
           'handlers are recorded identically. Facilities that report to TRI are a subset of '
           'emitters, bounded by reporting thresholds and covered sectors, so a school beside '
           'a large non-reporting source scores as unexposed. The design is cross-sectional '
-          'and every estimate is associational. The tail result rests on 81 schools with a '
-          'Wilson interval from 33.0 to 54.1 percent, and should be read as a well-supported '
-          'hypothesis rather than a settled quantity.</p>']
+          'and every estimate is associational. The top 1 percent band holds 804 schools; '
+          'finer cuts of the extreme tail are too small to interpret.</p>']
 
     open(a.file, 'w').write('\n'.join(H))
     print(f'wrote {a.file}')

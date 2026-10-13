@@ -9,9 +9,8 @@ analysis. Nothing in them is computed here; they are crops of the browser view
 of viewer/index.html, with a hairline border so the frame edge is visible
 against a white page.
 
-The Oklahoma County capture has a band of unloaded basemap tiles down its left
-side, an artefact of screenshotting immediately after the map re-fits. That band
-is cropped away rather than recaptured, since the map pane it leaves is complete.
+Captured from the viewer after it was rebuilt on the 2019 TRI and 2017-2021 ACS
+data, with the Esri light-grey basemap (the earlier CARTO tiles now require a key).
 
 INPUTS   raw screenshots (path given by --src)
 OUTPUTS  output/figures/fig9_viewer_national.png
@@ -23,8 +22,8 @@ from PIL import Image, ImageOps
 
 # (source file, left crop edge) for each output figure.
 JOBS = {
-    'fig9_viewer_national.png':  ('screenshot-1787446317963-0.jpg',   0),
-    'fig10_viewer_oklahoma.png': ('screenshot-1787446394840-4.jpg', 332),
+    'fig9_viewer_national.png':  ('screenshot-1791858243687-2.jpg', 0),
+    'fig10_viewer_oklahoma.png': ('screenshot-1791858259600-3.jpg', 0),
 }
 BORDER = '#bbbbbb'
 

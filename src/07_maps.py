@@ -22,8 +22,8 @@ not have at that scale.
 
 INPUTS   data/derived/analysis_dataset.csv
          data/derived/tri_facilities_2024.csv
-OUTPUTS  output/figures/fig6_funding_map.png
-         output/figures/fig7_top_exposure_map.png
+OUTPUTS  output/figures/fig_funding_map.png
+         output/figures/fig_top1pct_map.png
          output/figures/fig8_case_maps.png
 """
 from __future__ import annotations
@@ -111,7 +111,7 @@ def fig_funding(out, df):
                for _, c, l in layers]
     ax.legend(handles=handles, loc='lower left', frameon=False, fontsize=7.5,
               handletextpad=0.4, borderpad=0)
-    fig.savefig(f'{out}/fig6_funding_map.png')
+    fig.savefig(f'{out}/fig_funding_map.png')
     plt.close(fig)
 
 
@@ -127,7 +127,7 @@ def fig_top_exposure(out, df, fac):
     # threshold is the same one the models use.
     full = df[df.STATE_LINKABLE & df.HAS_VENT.notna() & df.EXPOSURE.notna()
               & df.median_income.notna() & df.pct_poc.notna()]
-    cutoff = full.E_air_raw_lbs_per_km2.quantile(0.999)
+    cutoff = full.E_air_raw_lbs_per_km2.quantile(0.99)
     top = ana[ana.E_air_raw_lbs_per_km2 >= cutoff]
 
     f = fac[fac.lat.between(24, 50) & fac.lon.between(-125, -66)].copy()
@@ -138,8 +138,8 @@ def fig_top_exposure(out, df, fac):
     ax.scatter(fx, fy, s=1.1, c='#8a8a8a', alpha=0.30, linewidths=0, rasterized=True)
     funded = top[top.HAS_VENT == 1]
     unfunded = top[top.HAS_VENT == 0]
-    ax.scatter(funded.x, funded.y, s=26, c=FUNDED, edgecolor='white', linewidth=0.6, zorder=5)
-    ax.scatter(unfunded.x, unfunded.y, s=26, c=UNFUNDED, edgecolor='white', linewidth=0.6,
+    ax.scatter(funded.x, funded.y, s=10, c=FUNDED, edgecolor='white', linewidth=0.6, zorder=5)
+    ax.scatter(unfunded.x, unfunded.y, s=10, c=UNFUNDED, edgecolor='white', linewidth=0.6,
                zorder=6, marker='D')
     frame(ax)
 
@@ -147,15 +147,15 @@ def fig_top_exposure(out, df, fac):
         Line2D([], [], marker='o', ls='none', ms=2.2, mfc='#d9d9d9', mec='none',
                label='All public schools'),
         Line2D([], [], marker='o', ls='none', ms=2.8, mfc='#8a8a8a', mec='none',
-               label='TRI reporting facility, 2024'),
+               label='TRI reporting facility, 2019'),
         Line2D([], [], marker='o', ls='none', ms=5, mfc=FUNDED, mec='white',
-               label='Top 0.1% exposure, funded'),
+               label='Top 1% exposure, district recorded ventilation spending'),
         Line2D([], [], marker='D', ls='none', ms=5, mfc=UNFUNDED, mec='white',
-               label='Top 0.1% exposure, not funded'),
+               label='Top 1% exposure, district recorded none'),
     ]
     ax.legend(handles=handles, loc='lower left', frameon=False, fontsize=7.5,
               handletextpad=0.4, borderpad=0)
-    fig.savefig(f'{out}/fig7_top_exposure_map.png')
+    fig.savefig(f'{out}/fig_top1pct_map.png')
     plt.close(fig)
 
 
@@ -211,15 +211,21 @@ def fig_cases(out, df):
             ax.text(0.5, -0.21, f'{rate:.1f}% funded among linked schools',
                     transform=ax.transAxes, ha='center', va='top', fontsize=7.5,
                     color='#4a4a4a')
-    fig.subplots_adjust(bottom=0.24, top=0.97, wspace=0.08)
-    fig.savefig(f'{out}/fig8_case_maps.png')
+    handles = [Line2D([], [], marker='o', ls='none', ms=5, mfc=c, mec='none', label=l)
+               for c, l in [(FUNDED, 'District recorded ventilation spending'),
+                            (UNFUNDED, 'District recorded none'),
+                            (MISSING, 'No linkable district record')]]
+    fig.legend(handles=handles, loc='upper center', ncol=3, frameon=False, fontsize=7.5,
+               bbox_to_anchor=(0.5, 1.04), handletextpad=0.3, columnspacing=1.4)
+    fig.subplots_adjust(bottom=0.24, top=0.93, wspace=0.08)
+    fig.savefig(f'{out}/fig_case_maps.png')
     plt.close(fig)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--data', default='data/derived/analysis_dataset.csv')
-    ap.add_argument('--fac', default='data/derived/tri_facilities_2024.csv')
+    ap.add_argument('--fac', default='data/derived/tri_facilities_2019.csv')
     ap.add_argument('--out', default='output/figures')
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)

@@ -107,8 +107,8 @@ const LT=0, LN=1, PCT=2, HV=3, ST=4, CO=5, NM=6, CI=7, PC=8, MI=9;
 const FUNDED='#0072B2', UNFUNDED='#D55E00', MISSING='#9AA0A6';
 
 const map = L.map('map',{preferCanvas:true, zoomControl:true}).setView([39.3,-96.5],4);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-  {attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19}).addTo(map);
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  {attribution:'Tiles &copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors', maxZoom:16}).addTo(map);
 const layer = L.layerGroup().addTo(map);
 
 let mode='fund', minEx=0, stSel='', coSel='', linkedOnly=false;

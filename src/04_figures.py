@@ -38,29 +38,32 @@ plt.rcParams.update({
 
 
 def fig_tail(out, D):
+    """Funded rate by exposure percentile band.
+
+    The bands are deliberately unequal in width (half of all schools in the first,
+    one percent in the last), so they are drawn as separate bars with the share of
+    schools printed under each label rather than as points on a continuous axis,
+    which a reader would take to be evenly spaced in exposure.
+    """
     d = pd.read_csv(f'{D}/funded_by_exposure_percentile_band.csv', index_col=0)
+    labs = {'p0-50': '0-50th', 'p50-80': '50-80th', 'p80-90': '80-90th',
+            'p90-95': '90-95th', 'p95-99': '95-99th', 'p99-100': '99-100th'}
+    share = {'p0-50': 50, 'p50-80': 30, 'p80-90': 10, 'p90-95': 5, 'p95-99': 4, 'p99-100': 1}
     fig, ax = plt.subplots(figsize=(6.4, 3.6))
-    x = range(len(d))
-    err = [d.funded_pct - d.ci_lo, d.ci_hi - d.funded_pct]
-    cols = [BLUE] * len(d)
-    cols[-1] = ORANGE
-    if len(d) > 1:
-        cols[-2] = ORANGE
-    ax.errorbar(x, d.funded_pct, yerr=err, fmt='o', ms=5, lw=1.2, capsize=3,
-                color=INK, ecolor=GREY, zorder=3, linestyle='none')
-    ax.scatter(x, d.funded_pct, s=42, c=cols, zorder=4, edgecolor='white', linewidth=0.8)
-    ax.plot(x, d.funded_pct, color=GREY, lw=1, zorder=2)
+    x = list(range(len(d)))
+    ax.bar(x, d.funded_pct, width=0.62, color=BLUE, edgecolor='white')
+    ax.errorbar(x, d.funded_pct, yerr=[d.funded_pct - d.ci_lo, d.ci_hi - d.funded_pct],
+                fmt='none', ecolor=INK, capsize=3, lw=1)
     for i, (lab, r) in enumerate(d.iterrows()):
-        ax.annotate(f'{r.funded_pct:.1f}', (i, r.funded_pct), textcoords='offset points',
-                    xytext=(0, 11), ha='center', fontsize=8)
-        ax.annotate(f'n={int(r.n):,}', (i, r.funded_pct), textcoords='offset points',
-                    xytext=(0, -19), ha='center', fontsize=7, color=GREY)
-    ax.set_xticks(list(x))
-    ax.set_xticklabels(d.index, fontsize=8)
-    ax.set_xlabel('Percentile band of modelled industrial air-emissions exposure')
-    ax.set_ylabel('Schools with recorded\nventilation funding (%)')
-    ax.set_ylim(28, 80)
-    fig.savefig(f'{out}/fig1_exposure_tail.png')
+        ax.annotate(f'{r.funded_pct:.1f}%', (i, r.ci_hi), textcoords='offset points',
+                    xytext=(0, 4), ha='center', fontsize=8)
+    ax.set_xticks(x)
+    ax.set_xticklabels([f'{labs.get(b, b)}\n{share.get(b, "")}% of schools\nn = {int(r.n):,}'
+                        for b, r in d.iterrows()], fontsize=7.5)
+    ax.set_xlabel('Percentile band of the exposure index (bands are not equal width)')
+    ax.set_ylabel('Schools in districts that recorded\nventilation spending (%)')
+    ax.set_ylim(0, 80)
+    fig.savefig(f'{out}/fig_exposure_bands.png')
     plt.close(fig)
 
 
@@ -68,10 +71,10 @@ def fig_specification(out, D):
     d = pd.read_csv(f'{D}/tier_counts_by_variant.csv', index_col=0)
     order = ['Negligible', 'Minimal', 'Low', 'Moderate', 'High', 'Critical']
     d = d.loc[order]
-    names = {'E_forms': 'Published index\n(chemical forms, k=50)',
-             'E_fac': 'Facility dedup only',
-             'E_isq': 'True inverse square',
-             'E_air': 'Air-mass weighted\n(canonical)'}
+    names = {'E_forms': 'A. Counts chemical reports,\nweak distance decay (earlier version)',
+             'E_fac': 'B. Counts facilities,\nweak distance decay',
+             'E_isq': 'C. Counts facilities,\ninverse-square distance',
+             'E_air': 'D. Weights facilities by air releases,\ninverse-square distance (used here)'}
     cols = [c for c in ['E_forms', 'E_fac', 'E_isq', 'E_air'] if c in d.columns]
     fig, ax = plt.subplots(figsize=(6.6, 3.4))
     w = 0.2
@@ -83,25 +86,32 @@ def fig_specification(out, D):
     ax.set_xticklabels(order)
     ax.set_ylabel('Schools (thousands)')
     ax.set_xlabel('Exposure tier, identical cutpoints on the 0-100 normalised index')
-    ax.legend(frameon=False, fontsize=7.5, ncol=2, loc='upper right')
-    fig.savefig(f'{out}/fig2_specification_sensitivity.png')
+    ax.legend(frameon=False, fontsize=7, ncol=2, loc='upper center', bbox_to_anchor=(0.5, 1.28))
+    fig.savefig(f'{out}/fig_index_variants.png')
     plt.close(fig)
 
 
 def fig_state_gap(out, D):
     d = pd.read_csv(f'{D}/within_state_gap.csv', index_col=0).sort_values('gap_pts')
-    d = d[d.funded_hi.ne(d.funded_lo) | d.gap_pts.ne(0)]
-    fig, ax = plt.subplots(figsize=(5.4, 7.2))
+    fig, ax = plt.subplots(figsize=(5.6, 7.6))
     cols = [ORANGE if g < 0 else BLUE for g in d.gap_pts]
     ax.barh(range(len(d)), d.gap_pts, color=cols, height=0.72)
     ax.axvline(0, color=INK, lw=0.9)
     ax.set_yticks(range(len(d)))
     ax.set_yticklabels(d.index, fontsize=7.5)
     ax.invert_yaxis()
+    # States with no within-state variation have a gap of zero by construction;
+    # they are kept and labelled rather than silently dropped.
+    for i, (st, r) in enumerate(d.iterrows()):
+        if r.gap_pts == 0 and r.funded_hi == r.funded_lo:
+            note = 'every school funded' if r.funded_hi == 100 else 'no school funded'
+            ax.annotate(f'0 ({note})', (0.8, i), va='center', fontsize=6.8, color=GREY)
     ax.set_xlabel('Funded-rate gap, top minus bottom within-state\nexposure quintile (percentage points)')
-    ax.annotate('most-exposed schools\nfunded less', xy=(-30, len(d) - 3), fontsize=7.5,
-                color=ORANGE, ha='left')
-    fig.savefig(f'{out}/fig3_within_state_gap.png')
+    ax.annotate('Orange: the state\'s most-exposed\nschools were funded\nless often than its\nleast-exposed schools',
+                xy=(0.03, 0.03), xycoords='axes fraction', fontsize=7.5, color=ORANGE, ha='left', va='bottom')
+    ax.annotate('Blue: the state\'s most-exposed\nschools were funded\nmore often than its\nleast-exposed schools',
+                xy=(0.97, 0.97), xycoords='axes fraction', fontsize=7.5, color=BLUE, ha='right', va='top')
+    fig.savefig(f'{out}/fig_state_gap.png')
     plt.close(fig)
 
 
@@ -120,7 +130,7 @@ def fig_coverage(out, D):
         if pd.notna(r.lea_funded_pct):
             ax.annotate(f'district-level: {r.lea_funded_pct:.0f}% funded',
                         (max(r.pct_matched, 1) + 2, i), va='center', fontsize=6.8, color=GREY)
-    fig.savefig(f'{out}/fig4_identifier_coverage.png')
+    fig.savefig(f'{out}/fig_identifier_coverage.png')
     plt.close(fig)
 
 
@@ -139,7 +149,7 @@ def fig_race(out, D):
     ax.set_ylabel('Recorded ventilation\nfunding (%)')
     ax.set_ylim(0, 92)
     ax.set_xlabel('Quintile of county population that is people of color')
-    fig.savefig(f'{out}/fig5_race_gradient.png')
+    fig.savefig(f'{out}/fig_poc_quintiles.png')
     plt.close(fig)
 
 

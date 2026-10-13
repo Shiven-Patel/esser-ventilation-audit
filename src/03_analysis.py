@@ -43,6 +43,14 @@ TIER_LABELS = ['Negligible', 'Minimal', 'Low', 'Moderate', 'High', 'Critical']
 LOG = io.StringIO()
 
 
+def _grp(d):
+    """District identifiers as integer codes. Ventilation status is recorded once
+    per district and copied to each of its schools, so schools in one district are
+    not independent observations; every model therefore uses standard errors
+    clustered on the district."""
+    return pd.factorize(d['LEAID'])[0]
+
+
 def say(*a):
     s = ' '.join(str(x) for x in a)
     print(s)
@@ -114,6 +122,7 @@ def main():
     say('Their LEA-level rates are reported in output/coverage_by_state.csv and in the paper,')
     say('but they cannot enter a school-level model.\n')
 
+    say(f'Funded schools, analytic sample: {int(ana.HAS_VENT.sum()):,} of {len(ana):,}')
     say(f'Overall funded rate, analytic sample: {ana.HAS_VENT.mean()*100:.1f}% '
         f'(Wilson 95% CI {wilson(ana.HAS_VENT.sum(), len(ana))[0]:.1f}-'
         f'{wilson(ana.HAS_VENT.sum(), len(ana))[1]:.1f})')
@@ -163,29 +172,38 @@ def main():
     # percentile, so everything above it collapses to exactly 100 and the top
     # band would be degenerate.
     pct = ana.E_air_raw_lbs_per_km2.rank(pct=True) * 100
-    bands = [(0, 50), (50, 80), (80, 90), (90, 95), (95, 99), (99, 99.9), (99.9, 100.01)]
-    rows = []
-    for lo, hi in bands:
+    def band_table(bands):
+      rows = []
+      for lo, hi in bands:
         g = ana[(pct > lo) & (pct <= hi)]
         if not len(g):
             continue
         c = wilson(g.HAS_VENT.sum(), len(g))
         rows.append({'band': f'p{lo:g}-{min(hi, 100):g}', 'n': len(g),
+                     'funded_n': int(g.HAS_VENT.sum()),
                      'funded_pct': round(g.HAS_VENT.mean() * 100, 1),
                      'ci_lo': round(c[0], 1), 'ci_hi': round(c[1], 1),
                      'median_index_raw': f'{g.E_air_raw_lbs_per_km2.median():.3g}',
                      'mean_poc': round(g.pct_poc.mean(), 1),
                      'med_income': int(g.median_income.median())})
-    tail = pd.DataFrame(rows).set_index('band')
-    say('By percentile band of the canonical index, narrowing towards the tail:')
+      return pd.DataFrame(rows).set_index('band')
+    # Primary bands collapse everything above the 99th percentile into one tier
+    # (about 800 schools), as a co-author suggested: the split at 99.9 rests on
+    # about 80 schools and is reported only as a supplementary table.
+    tail = band_table([(0, 50), (50, 80), (80, 90), (90, 95), (95, 99), (99, 100.01)])
+    say('By percentile band of the canonical index (top 1% as one band):')
     say(tail.to_string() + '\n')
     W(tail, 'funded_by_exposure_percentile_band.csv')
+    tail_split = band_table([(95, 99), (99, 99.9), (99.9, 100.01)])
+    say('Supplementary: the top bands split at the 99.9th percentile:')
+    say(tail_split.to_string() + '\n')
+    W(tail_split, 'funded_by_exposure_percentile_band_split.csv')
 
     # Where the top band's schools actually are. A tail result carried by one state's
     # reporting practice would be a different finding, so the spread is reported.
-    top = ana[pct > 99.9]
+    top = ana[pct > 99]
     top_states = top.STATE.value_counts()
-    say(f'Schools above the 99.9th percentile: {len(top)} across {top_states.size} states. '
+    say(f'Schools above the 99th percentile: {len(top)} across {top_states.size} states. '
         f'Largest concentrations: '
         + ', '.join(f'{s} {n}' for s, n in top_states.head(5).items()) + '.')
     say(f'Their median unnormalised index is '
@@ -205,8 +223,7 @@ def main():
                          'n': int(r['size']), 'funded_pct': round(r['mean'] * 100, 1)})
     sens = pd.DataFrame(rows).pivot(index='quintile', columns='variant', values='funded_pct')
     say(sens.to_string())
-    say('\nThe gradient is present under every specification. Its shape is not: the two')
-    say('corrected indices turn over at the top quintile, and the published index does not.\n')
+    say('\nCompare the lowest and highest quintile under each specification.\n')
     W(pd.DataFrame(rows).set_index(['variant', 'quintile']), 'sensitivity_exposure.csv')
 
     tierx = pd.concat([pd.cut(ana[v], TIER_EDGES, labels=TIER_LABELS).value_counts().rename(v)
@@ -230,14 +247,14 @@ def main():
     ana['expq'] = ana.exp_q.astype(str)
 
     mods = {}
-    mods['A. exposure only'] = smf.logit('HAS_VENT ~ exp10', data=ana).fit(disp=0)
+    mods['A. exposure only'] = smf.logit('HAS_VENT ~ exp10', data=ana).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(ana)})
     mods['B. + county income + % POC'] = smf.logit('HAS_VENT ~ exp10 + inc10k + poc10',
-                                                   data=ana).fit(disp=0)
+                                                   data=ana).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(ana)})
     srate = ana.groupby('STATE')['HAS_VENT'].mean()
     mixed_states = srate[(srate > 0.001) & (srate < 0.999)].index
     mixed = ana[ana.STATE.isin(mixed_states)].copy()
     mods['C. + state fixed effects'] = smf.logit('HAS_VENT ~ exp10 + inc10k + poc10 + C(STATE)',
-                                                 data=mixed).fit(disp=0)
+                                                 data=mixed).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixed)})
     say(f'Model C is estimated on the {len(mixed_states)} states with within-state variation '
         f'(n = {len(mixed):,}).')
     say(f'States dropped by perfect separation: {sorted(set(ana.STATE) - set(mixed_states))}')
@@ -248,18 +265,26 @@ def main():
     # predict better than the covariates" is answered by numbers rather than asserted.
     # Model B is estimated on the full analytic sample and Model C on the mixed-state
     # subset, so their C-statistics are not directly comparable; these two are.
-    mods['S. state fixed effects only'] = smf.logit('HAS_VENT ~ C(STATE)', data=mixed).fit(disp=0)
+    # Model D adds tract-level income and race (ACS 2017-2021, school's own census
+    # tract) to Model C, keeping the county covariates, on schools with both.
+    mixed['tinc10k'] = mixed.tract_income / 10000.0
+    mixed['tpoc10'] = mixed.tract_pct_poc / 10.0
+    mixd = mixed.dropna(subset=['tinc10k', 'tpoc10']).copy()
+    mods['D. + tract income + tract % POC'] = smf.logit(
+        'HAS_VENT ~ exp10 + inc10k + poc10 + tinc10k + tpoc10 + C(STATE)', data=mixd).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixd)})
+    mods['S. state fixed effects only'] = smf.logit('HAS_VENT ~ C(STATE)', data=mixed).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixed)})
     mods["B'. covariates only, Model C's sample"] = smf.logit(
-        'HAS_VENT ~ exp10 + inc10k + poc10', data=mixed).fit(disp=0)
+        'HAS_VENT ~ exp10 + inc10k + poc10', data=mixed).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixed)})
 
     rows = []
     for name, m in mods.items():
-        d = ana if name.startswith(('A.', 'B.')) else mixed
+        d = ana if name.startswith(('A.', 'B.')) else (mixd if name.startswith('D.') else mixed)
         row = {'model': name, 'n': int(m.nobs),
                'C_statistic': round(auc(d.HAS_VENT, m.predict()), 3),
                'pseudo_R2': round(m.prsquared, 4)}
         for term, lab in [('exp10', 'exposure_per_10pts'), ('inc10k', 'income_per_10k'),
-                          ('poc10', 'pct_poc_per_10pp')]:
+                          ('poc10', 'pct_poc_per_10pp'), ('tinc10k', 'tract_income_per_10k'),
+                          ('tpoc10', 'tract_pct_poc_per_10pp')]:
             if term in m.params:
                 o, lo, hi = or_ci(m, term)
                 row[lab] = f'{o:.3f} ({lo:.3f}-{hi:.3f})'
@@ -270,13 +295,13 @@ def main():
     W(models, 'models.csv')
 
     # attenuation: how much of the exposure association runs through race
-    m_norace = smf.logit('HAS_VENT ~ exp10 + inc10k + C(STATE)', data=mixed).fit(disp=0)
+    m_norace = smf.logit('HAS_VENT ~ exp10 + inc10k + C(STATE)', data=mixed).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixed)})
     o0, l0, h0 = or_ci(m_norace, 'exp10'); o1, l1, h1 = or_ci(mods['C. + state fixed effects'], 'exp10')
     say(f'Attenuation check, Model C without county race: exposure aOR {o0:.3f} ({l0:.3f}-{h0:.3f}); '
         f'adding race gives {o1:.3f} ({l1:.3f}-{h1:.3f}).\n')
 
     # exposure-quintile odds ratios, reference = Q1
-    mq = smf.logit('HAS_VENT ~ C(expq) + inc10k + poc10 + C(STATE)', data=mixed).fit(disp=0)
+    mq = smf.logit('HAS_VENT ~ C(expq) + inc10k + poc10 + C(STATE)', data=mixed).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixed)})
     qrows = []
     for t in [p for p in mq.params.index if p.startswith('C(expq)')]:
         o, lo, hi = or_ci(mq, t)
@@ -298,33 +323,43 @@ def main():
     mixed['t95'] = ((pctm > 95) & (pctm <= 99)).astype(int)
     mixed['t99'] = ((pctm > 99) & (pctm <= 99.9)).astype(int)
     mixed['t999'] = (pctm > 99.9).astype(int)
+    mixed['t99all'] = (pctm > 99).astype(int)
+    mt1 = smf.logit('HAS_VENT ~ t95 + t99all + inc10k + poc10 + C(STATE)', data=mixed).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixed)})
+    trows = []
+    for term, lab in [('t95', 'p95-99'), ('t99all', 'p99-100')]:
+        o, lo, hi = or_ci(mt1, term)
+        trows.append({'band': lab, 'n': int(mixed[term].sum()), 'aOR_vs_below_p95': round(o, 3),
+                      'lo': round(lo, 3), 'hi': round(hi, 3), 'p': f'{mt1.pvalues[term]:.2e}'})
+    tt1 = pd.DataFrame(trows).set_index('band')
+    say('Adjusted odds at the top of the exposure distribution (top 1% as one band),')
+    say('reference = everything at or below the 95th percentile, with state fixed effects:')
+    say(tt1.to_string() + '\n')
+    W(tt1, 'tail_odds.csv')
     mt = smf.logit('HAS_VENT ~ t95 + t99 + t999 + inc10k + poc10 + C(STATE)',
-                   data=mixed).fit(disp=0)
+                   data=mixed).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixed)})
     trows = []
     for term, lab in [('t95', 'p95-99'), ('t99', 'p99-99.9'), ('t999', 'top 0.1%')]:
         o, lo, hi = or_ci(mt, term)
         trows.append({'band': lab, 'n': int(mixed[term].sum()), 'aOR_vs_below_p95': round(o, 3),
                       'lo': round(lo, 3), 'hi': round(hi, 3), 'p': f'{mt.pvalues[term]:.2e}'})
     tt = pd.DataFrame(trows).set_index('band')
-    say('Adjusted odds of ventilation funding at the top of the exposure distribution,')
-    say('reference = everything below the 95th percentile, with state fixed effects:')
+    say('Supplementary: the same model with the top 1% split at the 99.9th percentile:')
     say(tt.to_string() + '\n')
-    W(tt, 'tail_odds.csv')
+    W(tt, 'tail_odds_split.csv')
 
     # Is it a smooth inverted U, or a discontinuity confined to the extreme tail?
     mixed['lx'] = np.log10(mixed.E_air_raw_lbs_per_km2.clip(lower=1.0))
     mquad = smf.logit('HAS_VENT ~ lx + I(lx**2) + inc10k + poc10 + C(STATE)',
-                      data=mixed).fit(disp=0)
+                      data=mixed).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixed)})
     say(f'Quadratic in log10 exposure: linear b = {mquad.params["lx"]:.4f} '
         f'(p = {mquad.pvalues["lx"]:.2e}); squared b = {mquad.params["I(lx ** 2)"]:.4f} '
         f'(p = {mquad.pvalues["I(lx ** 2)"]:.2e}).')
-    say('The squared term is not distinguishable from zero, so the pattern is not a')
-    say('smooth inverted U. The association rises across the bulk of the distribution')
-    say('and then breaks at the extreme tail. Reporting it as curvature would overstate')
-    say('what the data show.\n')
+    say('A squared term distinguishable from zero would indicate curvature (for example an')
+    say('inverted U). Read it against its p-value; the band model above is the direct test')
+    say('of the top of the distribution.\n')
 
     # interaction
-    mi = smf.logit('HAS_VENT ~ exp10 * poc10 + inc10k + C(STATE)', data=mixed).fit(disp=0)
+    mi = smf.logit('HAS_VENT ~ exp10 * poc10 + inc10k + C(STATE)', data=mixed).fit(disp=0, cov_type='cluster', cov_kwds={'groups': _grp(mixed)})
     o, lo, hi = or_ci(mi, 'exp10:poc10')
     say(f'Exposure x county-race interaction: OR {o:.4f} ({lo:.4f}-{hi:.4f}), '
         f'p = {mi.pvalues["exp10:poc10"]:.2e}\n')

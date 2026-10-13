@@ -192,12 +192,50 @@ def load_acs_race(path: str) -> pd.DataFrame:
     return df[['COUNTY_FIPS', 'pct_poc']].dropna(subset=['COUNTY_FIPS'])
 
 
+def load_acs_combined(path: str):
+    """County and tract income and race from one file.
+
+    The file is built from the Census Bureau's 2017-2021 ACS 5-year table-based
+    summary file (acsdt5y2021-b19013.dat and acsdt5y2021-b03002.dat), keeping
+    county (summary level 050) and tract (140) rows. Columns: level, GEOID,
+    B19013_001E, B03002_001E, B03002_003E. Census uses large negative sentinels
+    (e.g. -666666666) for suppressed medians; those become missing here.
+    """
+    df = pd.read_csv(path, dtype={'GEOID': str})
+    inc = pd.to_numeric(df['B19013_001E'], errors='coerce')
+    df['median_income'] = inc.where(inc > 0)
+    total = pd.to_numeric(df['B03002_001E'], errors='coerce')
+    nhw = pd.to_numeric(df['B03002_003E'], errors='coerce')
+    df['pct_poc'] = np.where(total > 0, (1.0 - nhw / total) * 100.0, np.nan)
+    co = df[df.level == 'county'][['GEOID', 'median_income', 'pct_poc']].rename(columns={'GEOID': 'COUNTY_FIPS'})
+    co['COUNTY_FIPS'] = co['COUNTY_FIPS'].str.zfill(5)
+    tr = (df[df.level == 'tract'][['GEOID', 'median_income', 'pct_poc']]
+            .rename(columns={'GEOID': 'TRACT', 'median_income': 'tract_income', 'pct_poc': 'tract_pct_poc'}))
+    tr['TRACT'] = tr['TRACT'].str.zfill(11)
+    return co, tr
+
+
+def assign_tracts(sch: pd.DataFrame, shp: str) -> pd.Series:
+    """Point-in-polygon join of school coordinates to 2020-vintage tract polygons
+    (Census cartographic boundary file cb_2021_us_tract_500k)."""
+    import geopandas as gpd
+    t = gpd.read_file(shp, columns=['GEOID'])
+    pts = gpd.GeoDataFrame(sch[['NCESSCH']].copy(),
+                           geometry=gpd.points_from_xy(sch.LON, sch.LAT), crs='EPSG:4326').to_crs(t.crs)
+    j = gpd.sjoin(pts, t[['GEOID', 'geometry']], how='left', predicate='within')
+    j = j[~j.index.duplicated(keep='first')]
+    return j['GEOID'].reindex(pts.index)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--exposure', default='data/derived/school_exposure.csv')
     ap.add_argument('--esser', default='data/raw/esf_hvac_spending.xlsx')
     ap.add_argument('--income', default='data/raw/ACSDT5Y2024.B19013-Data.csv')
     ap.add_argument('--race', default='data/raw/ACSDT5Y2024.B03002-Data.csv')
+    ap.add_argument('--acs', default='data/raw/acs2021_5yr_county_tract.csv',
+                    help='combined county+tract ACS file; when present it replaces --income/--race')
+    ap.add_argument('--tracts', default='data/raw/tracts/cb_2021_us_tract_500k.shp')
     ap.add_argument('--outdir', default='data/derived')
     ap.add_argument('--outputs', default='output')
     a = ap.parse_args()
@@ -215,11 +253,20 @@ def main():
     df = sch.merge(lea.drop(columns=['LEA_STATE']), on='LEAID', how='left')
     assert len(df) == len(sch), 'the LEA join must not change the row count'
 
-    print('--- 3. COUNTY CONTEXT (ACS 5-year, 2024 vintage) ---')
-    inc = load_acs_income(a.income)
-    race = load_acs_race(a.race)
-    df = df.merge(inc, left_on='CNTY', right_on='COUNTY_FIPS', how='left').drop(columns='COUNTY_FIPS')
-    df = df.merge(race, left_on='CNTY', right_on='COUNTY_FIPS', how='left').drop(columns='COUNTY_FIPS')
+    if a.acs and os.path.exists(a.acs):
+        print('--- 3. COUNTY AND TRACT CONTEXT (ACS 5-year, 2017-2021) ---')
+        co, tr = load_acs_combined(a.acs)
+        df = df.merge(co, left_on='CNTY', right_on='COUNTY_FIPS', how='left').drop(columns='COUNTY_FIPS')
+        df['TRACT'] = assign_tracts(df, a.tracts).values
+        df = df.merge(tr, on='TRACT', how='left')
+        print(f"    tract assigned for {df.TRACT.notna().sum():,}; tract income for "
+              f"{df.tract_income.notna().sum():,}; tract race for {df.tract_pct_poc.notna().sum():,}")
+    else:
+        print('--- 3. COUNTY CONTEXT (ACS 5-year, 2024 vintage) ---')
+        inc = load_acs_income(a.income)
+        race = load_acs_race(a.race)
+        df = df.merge(inc, left_on='CNTY', right_on='COUNTY_FIPS', how='left').drop(columns='COUNTY_FIPS')
+        df = df.merge(race, left_on='CNTY', right_on='COUNTY_FIPS', how='left').drop(columns='COUNTY_FIPS')
     print(f"    income matched for {df.median_income.notna().sum():,}/{len(df):,} schools; "
           f"race for {df.pct_poc.notna().sum():,}")
 
