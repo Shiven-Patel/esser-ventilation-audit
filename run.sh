@@ -3,12 +3,12 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-echo "[1/6] exposure";    python3 src/01_build_exposure.py
+echo "[1/6] exposure";    python3 src/01_build_exposure.py --tri data/raw/tri_2019_us.csv --year 2019
 echo "[2/6] dataset";     python3 src/02_build_dataset.py
 echo "[3/6] analysis";    python3 src/03_analysis.py
 echo "[4/6] figures";     python3 src/04_figures.py
 echo "[5/6] maps";        python3 src/07_maps.py
-echo "[6/6] manuscript";  python3 src/05_math_doc.py && node src/06_manuscript_docx.js
+echo "[6/6] computation record"; python3 src/05_math_doc.py
 
 echo
 echo "Optional: interactive viewer   python3 src/08_build_viewer.py"

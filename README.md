@@ -6,11 +6,15 @@ nothing else: the exposure model, the federal-record linkage, every table and fi
 worked computation record, and the audit that found what was wrong with the previous
 version of this work. The paper written from it is not distributed here.
 
-**Headline result.** Recorded ESSER ventilation funding rises with modelled industrial air
-exposure across almost the entire distribution, from 54.2% of schools below the median to
-70.0% in the 95th to 99th percentile, and then falls to 43.2% among the 81 most exposed
-schools in the country. Adjusted for state, county income and county racial composition,
-those 81 schools have 0.43 times the odds of funding (95% CI 0.27 to 0.70).
+**Headline result.** Exposure is measured from 2019 TRI releases, before ESSER, and
+demographics from the 2017-2021 ACS. Recorded ESSER ventilation funding rises with modelled
+industrial air exposure from 53.8% of schools below the median to 67.7% and 67.0% in the
+90th-95th and 95th-99th percentiles, and is 58.6% in the top 1% (804 schools). With state
+fixed effects, county covariates and district-clustered standard errors, the 95th-99th band
+has 1.32 times the odds of schools at or below the 95th percentile (95% CI 1.07 to 1.63);
+the top 1% does not differ (0.93, 0.70 to 1.24). Adding tract income and racial composition
+(Model D) leaves exposure with no detectable association (aOR per 10 points 1.015, 0.980
+to 1.051).
 
 **Second result, which may matter more.** Arizona, Connecticut, Texas and Washington
 answered the ventilation question for all 2,297 of their school districts and left the
@@ -26,7 +30,7 @@ exposure in the country.
 
 ```bash
 pip install -r requirements.txt
-# place the four raw files in data/raw/ (see "Data" below), then:
+# place the raw files in data/raw/ (see "Data" below), then:
 bash run.sh
 ```
 
@@ -64,14 +68,19 @@ because titles are set alongside the image wherever it is placed.
 
 ## Data
 
-Four public files, none redistributed here. Sizes are approximate.
+Public files, none redistributed here. Sizes are approximate.
 
 | File | Source | Vintage |
 |---|---|---|
 | `EDGE_GEOCODE_PUBLICSCH_2425.TXT` (22 MB) | NCES EDGE public school geocodes | 2024-25 |
-| `epa_tri_national.csv` (60 MB) | EPA TRI Basic Data Files, national | RY2024 |
+| `tri_2019_us.csv` (63 MB) | EPA TRI Basic Data File, US, reporting year 2019 (`--tri`, `--year 2019`) | RY2019 |
 | `esf_hvac_spending.xlsx` (37 MB) | ED ESSER Annual Performance Report, `crossact` and `prime` worksheets | FY2023 |
-| `ACSDT5Y2024.B19013-Data.csv`, `ACSDT5Y2024.B03002-Data.csv` | Census ACS 5-year, county level | 2024 |
+| `acs2021_5yr_county_tract.csv` (3 MB) | Census ACS 2017-2021 5-year table-based summary file, `acsdt5y2021-b19013.dat` and `acsdt5y2021-b03002.dat`, county (050) and tract (140) rows kept | 2017-2021 |
+| `tracts/cb_2021_us_tract_500k.shp` (57 MB zip) | Census 2021 cartographic boundary file, census tracts | 2021 (2020 tracts) |
+
+`acs2021_5yr_county_tract.csv` has columns `level, GEOID, B19013_001E, B03002_001E,
+B03002_003E`. The earlier 2024-vintage files (`epa_tri_national.csv`, `ACSDT5Y2024.*`) still
+run through the same scripts if passed explicitly.
 
 ## What changed from the earlier version, and why
 
